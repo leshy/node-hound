@@ -32,13 +32,18 @@ Hound.prototype.watchers = []
  * @param {string} src
  * @return {Hound}
  */
+
+Hound.prototype.ignore = undefined
+
 Hound.prototype.watch = function(src) {
   var self = this
-    try {
-  var stats = fs.statSync(src)
-    } catch (err) {
-        return
-    }
+  if (this.ignore && !this.ignore(src)) { return }
+
+  try { var stats = fs.statSync(src) } catch(err) {
+      //console.log("fail",err);
+      return
+  }
+
   var lastChange = null
   if (stats.isDirectory()) {
     var files = fs.readdirSync(src)
@@ -63,12 +68,13 @@ Hound.prototype.watch = function(src) {
         for (var i = 0, len = dirFiles.length; i < len; i++) {
           var file = src + '/' + dirFiles[i]
           if (self.watchers[file] === undefined) {
-              try {
-                  stat = fs.statSync(file)
-              } catch(err) { return }
+              try { var stats = fs.statSync(src) } catch(err) {
+                  //console.log("fail",err);
+                  return
+              }
 
             self.watch(file)
-            self.emit('create', file, stat)
+            self.emit('create', file, stats)
           }
         }
       }
